@@ -1,0 +1,6 @@
+pyproject.toml
+ensta_bigdata_teaching_lab3.egg-info/PKG-INFO
+ensta_bigdata_teaching_lab3.egg-info/SOURCES.txt
+ensta_bigdata_teaching_lab3.egg-info/dependency_links.txt
+ensta_bigdata_teaching_lab3.egg-info/requires.txt
+ensta_bigdata_teaching_lab3.egg-info/top_level.txt

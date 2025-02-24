@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+BIG-DATA-MORT.egg-info/PKG-INFO
+BIG-DATA-MORT.egg-info/SOURCES.txt
+BIG-DATA-MORT.egg-info/dependency_links.txt
+BIG-DATA-MORT.egg-info/requires.txt
+BIG-DATA-MORT.egg-info/top_level.txt

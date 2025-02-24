@@ -3,12 +3,9 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ensta-bigdata-teaching-lab3"
+name = "BIG-DATA-MORT"
 version = "0.1.0"
-description = "UE Big Data - ENSTA 2025 - Lab 3"
-authors = [
-    { name = "Guillaume Desforges", email = "guillaume.desforges@ensta-paris.fr" },
-]
+description = "UE Big Data - BIG-DATA-MORT project"
 dependencies = ["pyspark", "altair"]
 
 [tool.setuptools]

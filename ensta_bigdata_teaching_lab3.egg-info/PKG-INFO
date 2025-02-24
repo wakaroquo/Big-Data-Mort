@@ -1,7 +1,0 @@
-Metadata-Version: 2.2
-Name: ensta-bigdata-teaching-lab3
-Version: 0.1.0
-Summary: UE Big Data - ENSTA 2025 - Lab 3
-Author-email: Guillaume Desforges <guillaume.desforges@ensta-paris.fr>
-Requires-Dist: pyspark
-Requires-Dist: altair

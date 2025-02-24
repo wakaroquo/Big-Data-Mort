@@ -1,2 +1,5 @@
 /.venv
 /download
+
+*.egg-info
+*.egg

@@ -1,6 +1,0 @@
-Metadata-Version: 2.2
-Name: BIG-DATA-MORT
-Version: 0.1.0
-Summary: UE Big Data - BIG-DATA-MORT project
-Requires-Dist: pyspark
-Requires-Dist: altair

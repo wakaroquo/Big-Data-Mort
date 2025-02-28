@@ -35,38 +35,31 @@ def get_spark() -> SparkSession:
 def parse_line(line : str) -> [death]:
     # This should really return an option type but whatever, python…
     try:
-        return death.death(line)
-    except e:
+        return death.death(line).__dict__.__str__()
+    except ValueError:
+        # Case where the line is not parsable, give up
         return []
 
 
-def first_read(data_file_paths: list[str], schema_path: str) -> DataFrame:
-    #comme spécifié, les expressions sont de taille fixe dans les fichiers txt
+def first_read(data_file_paths: list[str]) -> DataFrame:
+    # Read all the files and parse everything that is parsable
     data_file_paths=os.path.join(DATA_FOLDER,'*')
     df = spark.read.text(data_file_paths)
     return df.rdd.flatMap(parse_line)
-
-
-
-def process_death_data(df: DataFrame) -> DataFrame:
-    """Nettoyage et transformation complémentaires des données"""
-    return df.filter(col("date_deces") > col("date_naissance")) \
-             .withColumn("age_deces", floor(datediff(col("date_deces"), col("date_naissance")) / 365.25)) \
-             .withColumn("annee_deces", year(col("date_deces")))
 
 #fonction main proche du tp3
 if __name__ == "__main__":
     spark = get_spark()
     print("Version de Spark :", spark.version)
-    DATA_FOLDER = "download" 
-    SCHEMA_PATH = "/tmp/death_record_schema.json"
+    DATA_FOLDER = "download"
     
-    df = first_read(DATA_FOLDER, SCHEMA_PATH)
+    parsed = first_read(DATA_FOLDER)
+
+    parsed.saveAsTextFile("data/parsed.json")
+
+    # This first read should also write a schema, for further
+    # parsing, but it is merely the `death` class schema.
+
+    # Todo: remove fileds of `death` that we do not plan on using
+    # Todo: load the json, and write it to parquet
     
-    
-    processed_df = process_death_data(df)
-    
-    processed_df.write.partitionBy("annee_deces", "code_lieu_deces") \
-        .parquet("./data", mode="overwrite")
-    
-    spark.stop()

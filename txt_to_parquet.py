@@ -64,11 +64,12 @@ if __name__ == "__main__":
     
     df = spark.read.text(os.path.join(DATA_FOLDER, "*.txt"))
     parsed_df = parse_fixed_width(df)
-    #ecriture en json pour débugage
-    parsed_df.write \
-        .mode("overwrite") \
-        .option("dateFormat", "yyyy-MM-dd") \
-        .json("output_json")
+    # ecriture en json pour débugage
+    if len(sys.argv) >= 2 and sys.argv[1] == "--json":
+        parsed_df.write \
+            .mode("overwrite") \
+            .option("dateFormat", "yyyy-MM-dd") \
+            .json("output_json")
     #ecriture en parquet
     parsed_df.write \
         .mode("overwrite") \

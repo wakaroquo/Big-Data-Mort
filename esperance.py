@@ -17,7 +17,7 @@ if __name__ == "__main__":
     donnee = spark.read.parquet("output_parquet")
     total_deces = donnee.count()
     print("Nombre total de décès enregistrés : "+str(total_deces))
-    donnee = donnee.withColumn("age_deces", year(col("date_deces")) - year(col("date_naissance"))) 
+    donnee = donnee.withColumn("age_deces", datediff(col("date_deces"), col("date_naissance")) / 365)
     donnee_invalide = donnee.filter(col("date_naissance").isNull() | col("date_deces").isNull())
     nombre_individus_invalide = donnee_invalide.count()
 

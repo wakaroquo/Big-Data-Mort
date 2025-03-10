@@ -78,7 +78,7 @@ def parse_excel_file(excel_file: str) -> list[(int, int, int, int, int)]:
                 try:
                     (age_de, age_jusqua) = parse_tranche(tranche_age)
                 except ValueError:
-                    continue
+                    break
 
                 try:
                     val = int(ligne[colonne])
@@ -119,6 +119,8 @@ def load_data_parquet(excel_file: str, parquet_file: str) -> pyspark.sql.DataFra
     df = spark.createDataFrame(parse_excel_file(excel_file), schema=schema)
 
     df.write.parquet(parquet_file)
+    # For debugging pruposes
+    df.write.json(parquet_file+"_json")
     return df
 
 

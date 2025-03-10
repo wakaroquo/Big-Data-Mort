@@ -2,23 +2,50 @@ import os
 import pickle
 import pandas as pd
 import requests
-# Bien lire le commantaire suivant !!!
-# A retenir: ce fichier python permet de créer une liste derrière sauvegardée en fichier pickle (pop_data.pkl)
-# Afin d'avoir les données sur l'année i , il faut chercher dans liste_entière[2023-i]. On a alors un dictionnaire qui, a chaque code de département, associe une liste de paires ('j,j+4',nombre de personnes dans la tranche d'âge [j,j+4])
-# A noter: parmi la liste de pair, une fois qu'on dépasse le total, on obtient des tranche d'âge du type '60,64.2', ce qui correspond au données pondérées par le sexe (ici 2 correspond aux femmes), ces données sont inutiles dans le traitement actuel prévu.
-def load_data(excel_file, pickle_file):
+import pyspark
+from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+import common
+import re
 
-    # chargement du fichier pickle si la liste de dictionnaires est déjà faite
-    if os.path.exists(pickle_file):
-        print(f"Chargement des données depuis {pickle_file}...")
-        with open(pickle_file, "rb") as f:
-            liste_entiere = pickle.load(f)
-        return liste_entiere
 
+def parse_tranche(tranche: str) -> (int, int):
+    """Parse the header of a column
+
+    Args:
+        tranche (str): header of the column under the form `X à Y ans` ou `X ans et plus`
+
+    Raises:
+        ValueError: if the input string does not follow format
+
+    Returns:
+        (int, int): range of age described, to 200 if the age is not bounded
+    """
+    res = re.findall(r"(\d+) à (\d+) ans", tranche)
+    if len(res) == 1:
+        return res[0]
+    
+    res = re.findall(r"(\d+) ans et plus", tranche)
+    if len(res) == 1:
+        return res[0], 200 # AHHHHHHHHH Don't do that!
+    
+    raise ValueError
+
+
+def parse_excel_file(excel_file: str) -> list[(int, int, int, int, int)]:
+    """parse the excel file or fail trying
+
+    Args:
+        excel_file (str): path of the file
+
+    Returns:
+        list[(int, int, int, int, int)]: list of lines in the order: annee, departement, age_de, age_jusqua, population
+    """
     # lecture du fichier excel autrement
     print(f"Lecture du fichier Excel {excel_file}...")
     xls = pd.ExcelFile(excel_file)
-    liste_entiere = []
+
+
+    data = []
 
     for sheet_name in xls.sheet_names:
         # on passe la première page inutile
@@ -30,9 +57,6 @@ def load_data(excel_file, pickle_file):
 
         # Les données de header sont a la 4e ligne
         donnees = xls.parse(sheet_name, header=4)
-
-        # Dictionnaire de l'année étudiée (code_dept -> liste de paires (tranche d'âge, nombre de personne dans cette tranche d'âge) )
-        year_data = {}
         columns = donnees.columns
 
         # On ignore les 2 premières colonnes où il y a les codes et noms de département
@@ -49,36 +73,63 @@ def load_data(excel_file, pickle_file):
             pairs = []
             for colonne in colonne_age:
                 tranche_age = str(colonne).strip()
-                tranche_age = tranche_age.replace(" ans", "").replace(" à ", ",")
-                population = ligne[colonne]
-                pairs.append((tranche_age, population))
 
-            # On stocke dans le dictionnaire
-            year_data[code_dept] = pairs
+                # Trying to parse column, if not possible, it means that it is not an age slice
+                try:
+                    (age_de, age_jusqua) = parse_tranche(tranche_age)
+                except ValueError:
+                    continue
 
-        # On insère dans la liste des dictionnaires de chaque année
-        liste_entiere.append(year_data)
+                try:
+                    val = int(ligne[colonne])
+                except ValueError:
+                    val = 0
 
-    # On sauvegarde la liste en pickle
-    print(f"Sauvegarde des données dans {pickle_file}...")
-    with open(pickle_file, "wb") as f:
-        pickle.dump(liste_entiere, f)
 
-    return liste_entiere
+                data.append((int(sheet_name), int(code_dept), int(age_de), int(age_jusqua), val))
+    return data
+
+def load_data_parquet(excel_file: str, parquet_file: str) -> pyspark.sql.DataFrame:
+    """Loads the age repartition in each departement from excel file or parquet if it exists, and generate the parquet file.
+
+    Args:
+        excel_file (str): relative path of excel file
+        parquet_file (str): relative path of parquet file
+
+    Returns:
+        pyspark.sql.DataFrame: dataframe describing the age repartition
+    """
+    spark = common.get_spark()
+
+
+    # chargement du fichier pickle si la liste de dictionnaires est déjà faite
+    if os.path.exists(parquet_file):
+        print(f"Chargement des données depuis {parquet_file}...")
+        return spark.read.parquet(parquet_file)
+
+
+    schema = StructType([
+        StructField('annee', IntegerType(), True),
+        StructField('departement', IntegerType(), True),  # What about Corsica?
+        StructField('age_de', IntegerType(), True),
+        StructField('age_jusqua', IntegerType(), True),
+        StructField('populaiton', IntegerType(), True)
+    ])
+
+    df = spark.createDataFrame(parse_excel_file(excel_file), schema=schema)
+
+    df.write.parquet(parquet_file)
+    return df
 
 
 if __name__ == "__main__":
     file_response = requests.get("https://www.insee.fr/fr/statistiques/fichier/1893198/estim-pop-dep-sexe-aq-1975-2023.xls")
     file_response.raise_for_status()
-    with open("ages.xls", 'wb') as file:
+    with open("download/ages.xls", 'wb') as file:
         file.write(file_response.content)
-    data = load_data(
-        excel_file="ages.xls", 
-        pickle_file="pop_data.pkl"
+    data = load_data_parquet(
+        excel_file="download/ages.xls", 
+        parquet_file="data/ages"
     )
 
 
-    # Affichage d'une partie de la liste:
-    print("Structure de data[0] pour la feuille la plus récente :")
-    for dept_code, pairs in list(data[0].items())[:3]: 
-        print(f"Département {dept_code}: {pairs}")

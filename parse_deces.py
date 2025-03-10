@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 import os
+import common
 
 COLUMN_POSITIONS = [
     ("nom_prenom", (0, 80)),
@@ -26,15 +27,6 @@ DEATH_SCHEMA = StructType([
     StructField("code_lieu_deces", StringType()),
     StructField("num_acte_deces", StringType())
 ])
-
-def get_spark() -> SparkSession:
-    return SparkSession.builder \
-        .appName("TxtToJsonFixedWidth") \
-        .config("spark.sql.files.maxPartitionBytes", "128MB") \
-        .config("spark.sql.adaptive.enabled", "true") \
-        .config("spark.sql.legacy.timeParserPolicy", "CORRECTED") \
-        .config("spark.sql.parquet.datetimeRebaseModeInWrite", "LEGACY") \
-        .getOrCreate()
 
 def parse_fixed_width(df: DataFrame) -> DataFrame:
     exprs = [
@@ -69,11 +61,11 @@ if __name__ == "__main__":
         parsed_df.write \
             .mode("overwrite") \
             .option("dateFormat", "yyyy-MM-dd") \
-            .json("output_json")
+            .json("data/deces.json")
     #ecriture en parquet
     parsed_df.write \
         .mode("overwrite") \
-        .parquet("output_parquet")
+        .parquet("data/deces")
 
     # This first read should also write a schema, for further
     # parsing, but it is merely the `death` class schema.

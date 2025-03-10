@@ -3,19 +3,11 @@ from pyspark.sql.types import *
 from pyspark.sql.functions import *
 import geopandas as gpd
 import matplotlib.pyplot as plt
-
-def get_spark() -> SparkSession:
-    return SparkSession.builder \
-        .appName("TxtToJsonFixedWidth") \
-        .config("spark.sql.files.maxPartitionBytes", "128MB") \
-        .config("spark.sql.adaptive.enabled", "true") \
-        .config("spark.sql.legacy.timeParserPolicy", "CORRECTED") \
-        .config("spark.sql.parquet.datetimeRebaseModeInWrite", "LEGACY") \
-        .getOrCreate()
+import common
 
 if __name__ == "__main__":
-    spark = get_spark()
-    donnee = spark.read.parquet("output_parquet")
+    spark = common.get_spark()
+    donnee = spark.read.parquet("data/deces")
     total_deces = donnee.count()
     print("Nombre total de décès enregistrés : "+str(total_deces))
     donnee = donnee.withColumn("age_deces", datediff(col("date_deces"), col("date_naissance")) / 365)

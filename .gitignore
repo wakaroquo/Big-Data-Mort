@@ -1,10 +1,8 @@
 /.venv
 /download
 /data
-/output_parquet
-/output_json
 *.egg-info
 *.egg
 /data
-pop_data.pkl
 ages.xls
+__pycache__

@@ -1,7 +1,7 @@
 import os
 import requests
 BASE_API_URL = "https://www.data.gouv.fr/api/2/datasets/5de8f397634f4164071119c5/resources/"
-DOWNLOAD_FOLDER = "download"
+DOWNLOAD_FOLDER = "download/deces"
 
 def fetch_resources(page):
     params = {

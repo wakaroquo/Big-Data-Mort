@@ -1,20 +1,18 @@
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
-
-
-def get_spark() -> SparkSession:
-    return SparkSession.builder \
-        .appName("TxtToJsonFixedWidth") \
-        .config("spark.sql.files.maxPartitionBytes", "128MB") \
-        .config("spark.sql.adaptive.enabled", "true") \
-        .config("spark.sql.legacy.timeParserPolicy", "CORRECTED") \
-        .config("spark.sql.parquet.datetimeRebaseModeInWrite", "LEGACY") \
-        .getOrCreate()
+import common
 
 if __name__ == "__main__":
-    spark = get_spark()
-    df_test = spark.read.parquet("output_parquet")
+    spark = common.get_spark()
+
+    # If a path is passed as arguement, read that file, otherwise read 
+    if len(sys.argv) == 2:
+        file = sys.argv[1]
+    else:
+        file = "data/deces"
+
+    df_test = spark.read.parquet(file)
     df_test.show(10, truncate=False)
     df_test.printSchema()
 

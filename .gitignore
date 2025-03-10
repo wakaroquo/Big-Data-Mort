@@ -6,3 +6,5 @@
 *.egg-info
 *.egg
 /data
+pop_data.pkl
+ages.xls

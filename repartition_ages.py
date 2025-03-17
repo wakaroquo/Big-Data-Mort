@@ -119,19 +119,18 @@ def load_data_parquet(excel_file: str, parquet_file: str) -> pyspark.sql.DataFra
     df = spark.createDataFrame(parse_excel_file(excel_file), schema=schema)
 
     df.write.parquet(parquet_file)
+
     # For debugging pruposes
-    df.write.json(parquet_file+"_json")
+    if len(sys.argv) >= 2 and sys.argv[1] == "--json":
+        df.write.json(parquet_file+".json")
+
     return df
 
 
 if __name__ == "__main__":
-    file_response = requests.get("https://www.insee.fr/fr/statistiques/fichier/1893198/estim-pop-dep-sexe-aq-1975-2023.xls")
-    file_response.raise_for_status()
-    with open("download/ages.xls", 'wb') as file:
-        file.write(file_response.content)
     data = load_data_parquet(
-        excel_file="download/ages.xls", 
-        parquet_file="data/ages"
+        excel_file=common.DOWNLOAD_AGE, 
+        parquet_file=common.DATA_AGE
     )
 
 

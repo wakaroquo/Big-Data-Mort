@@ -52,20 +52,19 @@ def parse_fixed_width(df: DataFrame) -> DataFrame:
 #fonction main proche du tp3
 if __name__ == "__main__":
     spark = common.get_spark()
-    DATA_FOLDER = "download/deces"
     
-    df = spark.read.text(os.path.join(DATA_FOLDER, "*.txt"))
+    df = spark.read.text(os.path.join(common.DOWNLOAD_DECES, "*.txt"))
     parsed_df = parse_fixed_width(df)
     # ecriture en json pour débugage
     if len(sys.argv) >= 2 and sys.argv[1] == "--json":
         parsed_df.write \
             .mode("overwrite") \
             .option("dateFormat", "yyyy-MM-dd") \
-            .json("data/deces.json")
+            .json(common.DATA_DECES + ".json")
     #ecriture en parquet
     parsed_df.write \
         .mode("overwrite") \
-        .parquet("data/deces")
+        .parquet(common.DATA_DECES)
 
     # This first read should also write a schema, for further
     # parsing, but it is merely the `death` class schema.

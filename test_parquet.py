@@ -10,7 +10,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         file = sys.argv[1]
     else:
-        file = "data/deces"
+        file = common.DATA_DECES
 
     df_test = spark.read.parquet(file)
     df_test.show(10, truncate=False)

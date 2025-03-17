@@ -216,8 +216,8 @@ def fun_facts_departement(deces: DataFrame):
 
 if __name__ == "__main__":
     spark = common.get_spark()
-    repartition = spark.read.parquet("data/ages")
-    raw_deces = spark.read.parquet("data/deces")
+    repartition = spark.read.parquet(common.DATA_AGE)
+    raw_deces = spark.read.parquet(common.DATA_DECES)
     info_deces(raw_deces)
     deces_commune=compute_age_moyen_deces_commune(raw_deces)
     deces_departement=compute_age_moyen_deces_departement(raw_deces)

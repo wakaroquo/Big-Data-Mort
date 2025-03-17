@@ -1,8 +1,7 @@
 import os
 import requests
-BASE_API_URL = "https://www.data.gouv.fr/api/2/datasets/5de8f397634f4164071119c5/resources/"
-DOWNLOAD = "download"
-DOWNLOAD_FOLDER = DOWNLOAD+"/deces"
+import common
+
 
 def fetch_resources(page):
     params = {
@@ -10,7 +9,7 @@ def fetch_resources(page):
         'page_size': 6, 
         'type': 'main',         
     }
-    response = requests.get(BASE_API_URL, params=params)
+    response = requests.get(common.DECES_DB_URL, params=params)
     response.raise_for_status()
     return response.json()['data']
 
@@ -27,16 +26,16 @@ def get_all_resources():
     return all_resources
 
 
-def download():
+def download_deces():
     all_resources = get_all_resources()
-    if not os.path.exists(DOWNLOAD_FOLDER):
-        os.makedirs(DOWNLOAD_FOLDER)
+    if not os.path.exists(common.DOWNLOAD_DECES):
+        os.makedirs(common.DOWNLOAD_DECES)
 
     for resource in all_resources:
         if resource['format'] == 'txt' and 'deces-' in resource['title'] and 'm' not in resource['title'].lower() and 't4' not in resource['title'].lower():
             file_url = resource['url']
             file_name = resource['title']
-            file_path = os.path.join(DOWNLOAD_FOLDER, file_name)
+            file_path = os.path.join(common.DOWNLOAD_DECES, file_name)
             if not os.path.exists(file_path):
                 print(f"Téléchargement de {file_name}...")
                 file_response = requests.get(file_url)
@@ -45,8 +44,12 @@ def download():
                     file.write(file_response.content)
 
 
-if __name__ == "__main__":
-    download()
-    age=requests.get("https://www.insee.fr/fr/statistiques/fichier/1893198/estim-pop-dep-sexe-aq-1975-2023.xls")
-    with open(DOWNLOAD+"ages.xls", 'wb') as file:
+def download_ages():
+    age=requests.get(common.AGE_DB_URL)
+    with open(common.DOWNLOAD_AGE, 'wb') as file:
         file.write(age.content)
+
+
+if __name__ == "__main__":
+    download_deces()
+    download_ages()

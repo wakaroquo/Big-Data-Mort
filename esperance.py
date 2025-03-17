@@ -52,27 +52,6 @@ if __name__ == "__main__":
     print("Top 10 DÉPARTEMENTS avec le plus faible age moyen de décès :")
     top_10_lowest_dep.show(truncate=False)
 
-
-    # maintenant qu'il y a très peu de données, on peut traiter le résultat final avec pandas, on converti d'abord les données
-    donnees_pandas = age_moyen_deces_departement_filtre.select("code_departement", "age_moyen_deces").toPandas()
-
-    # on récupère la carte des départements français
-    url_geojson = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson"
-    carte = gpd.read_file(url_geojson)
-    carte_remplie = carte.merge(donnees_pandas, left_on="code", right_on="code_departement", how="left")
-
-    # configuration de matplotlib a partir de maintenant
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-
-    carte_remplie.plot(
-        column="age_moyen_deces",
-        cmap="magma",        
-        legend=True,     
-        linewidth=0.5, edgecolor="black",
-        ax=ax
-    )
-
-    ax.set_title("Âge moyen de décès par département", fontsize=14)
-    ax.axis("off")
-
-    plt.show()
+    carte1= carte(age_moyen_deces_departement_filtre,"age_moyen_deces")
+    carte1.dessine()
+    carte1.afficher()

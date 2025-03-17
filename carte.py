@@ -10,7 +10,7 @@ class carte:
 
     def dessine(self):
         # on récupère le peu de données spark qu'il reste, on peut traiter le résultat final avec pandas étant donné que nous n'avons plus les problématiques de big data ici, on converti d'abord les données
-        donnees_pandas = self.spark_data.select("code_departement", "age_moyen_deces").toPandas()
+        donnees_pandas = self.spark_data.select("code_departement", self.column_name).toPandas()
 
         # on récupère la carte des départements français
         url_geojson = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson"
@@ -21,14 +21,14 @@ class carte:
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 
         carte_remplie.plot(
-            column="age_moyen_deces",
+            column=self.column_name,
             cmap="magma",        
             legend=True,     
             linewidth=0.5, edgecolor="black",
             ax=ax
         )
 
-        ax.set_title("Âge moyen de décès par département", fontsize=14)
+        ax.set_title(self.column_name+" par département", fontsize=14)
         ax.axis("off")
 
         #sauvegarde de la carte correspondant à l'instance

@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
+from carte import carte
 import common
 
 
@@ -47,7 +48,7 @@ def mapping_extrapole(row: Row) -> list[Row]:
     return [
         Row(
             annee=row.annee,
-            departement=row.departement,
+            code_departement=row.departement,
             age=i,
             # On suppose que la population est équirépartie dans la tranche d'âge
             population=int(row.population/nb_years)
@@ -68,7 +69,7 @@ def extrapolate_age_partitionning(population: DataFrame) -> DataFrame:
     return population.rdd.flatMap(mapping_extrapole).toDF(
         StructType([
             StructField('annee', IntegerType(), True),
-            StructField('departement', StringType(), True),
+            StructField('code_departement', StringType(), True),
             StructField('age', IntegerType(), True),
             StructField('population', IntegerType(), True)
         ])
@@ -139,20 +140,20 @@ def compute_life_expectancy(deces: DataFrame, population: DataFrame) -> DataFram
         .join( # On fusionne les deux données
         population,
         [
-            deces.code_departement == population.departement,
+            deces.code_departement == population.code_departement,
             deces.age_deces == population.age,
             deces.annee_deces == population.annee
         ]
     )\
         .drop( # On supprime les lignes redondantes pour y voir plus clair
-            'code_departement', "age_deces", "annee_deces"
+            population.code_departement, "age_deces", "annee_deces"
         )\
         .withColumn( # On calcul la probabilité de rester en vie 
             "pi", when(col("population") != 0, (col("population") - col("nombre_deces")) / col("population")).otherwise(0)
         )\
         .withColumn(  # On fusionne age et pi pour pouvoir les avoir au moment de la fusion
             "age_pi", struct(col("age"), col("pi")))\
-        .groupBy(["departement", "annee"])\
+        .groupBy(["code_departement", "annee"])\
         .agg( # On fusionne et on garde la colone age et pi
             collect_list("age_pi").alias("list_age_pi"))\
         .withColumn( # On calcule l'espérance de vie
@@ -160,64 +161,74 @@ def compute_life_expectancy(deces: DataFrame, population: DataFrame) -> DataFram
         .drop( # On supprime cette colones car inutile et longue, c'est un tableau
             "list_age_pi")
 
+def compute_age_moyen_deces_commune(deces: DataFrame):
+    return deces.withColumn("age_deces", datediff(col("date_deces"), col("date_naissance")) / 365)\
+    .filter( # On supprime les données les colonnes avec un code_lieu décès manquant (normalement 0, cf info_deces)
+        col("code_lieu_deces").isNotNull() & (col("code_lieu_deces") != ""))\
+    .groupBy( #calcul de l'age moyen de décès
+    "code_lieu_deces").agg(avg("age_deces").alias("age_moyen_deces"),count("*").alias("nombre_individus"))\
+    .filter(col("nombre_individus") > 10000)
 
+def compute_age_moyen_deces_departement(deces: DataFrame):
+    return deces.withColumn("age_deces", datediff(col("date_deces"), col("date_naissance")) / 365)\
+    .filter( # On supprime les données les colonnes avec un code_lieu décès manquant (normalement 0, cf info_deces)
+        col("code_lieu_deces").isNotNull() & (col("code_lieu_deces") != ""))\
+    .withColumn( #on regroupe les communes par departement (la ligne suivant permet d'agréger en fonction de la substring des 2 premiers caractères du code département)
+        "code_departement", substring(col("code_lieu_deces"), 1, 2))\
+    .groupBy( #calcul de l'age moyen de décès par departement
+    "code_departement").agg(avg("age_deces").alias("age_moyen_deces"),count("*").alias("nombre_individus"))\
+    .filter(col("nombre_individus") > 10000)
 
-
-if __name__ == "__main__":
-    spark = common.get_spark()
-    repartition = spark.read.parquet("data/ages")
-    deces = spark.read.parquet("data/deces")
-
-    compute_life_expectancy(deces, repartition)
-
-
-    # What a bad name
-    donnee = deces
-
-    total_deces = donnee.count()
+def info_deces(raw_deces: DataFrame):
+    total_deces = raw_deces.count()
     print("Nombre total de décès enregistrés : "+str(total_deces))
-    donnee = donnee.withColumn("age_deces", datediff(col("date_deces"), col("date_naissance")) / 365)
-    donnee_invalide = donnee.filter(col("date_naissance").isNull() | col("date_deces").isNull())
+    donnee_invalide = raw_deces.filter(col("date_naissance").isNull() | col("date_deces").isNull())
     nombre_individus_invalide = donnee_invalide.count()
-
-    #On supprimer les données les colones avec un code_lieu décès manquant
-    donnee = donnee.filter(col("code_lieu_deces").isNotNull() & (col("code_lieu_deces") != ""))
-
-    #calcul de l'age moyen de décès
-    age_moyen_deces = donnee.groupBy("code_lieu_deces").agg(avg("age_deces").alias("age_moyen_deces"),count("*").alias("nombre_individus"))
     print("Nombre d'individus avec une date de naissance ou de décès manquante :"+str(nombre_individus_invalide))
+    return
 
-    # Pour faire des tops, on applique un filtre sql afin de ne pas avoir les communes avec moins de 4 individus décédés dans les données, souvent du à un ajout tardif de la commune dans les données
-    age_moyen_deces_filtre = age_moyen_deces.filter(col("nombre_individus") > 10000)
+def fun_facts_commune(deces: DataFrame):
 
     # Top 10 communes avec la plus haute espérance de vie
-    top_10_highest = age_moyen_deces_filtre.orderBy(desc("age_moyen_deces")).limit(10)
+    top_10_highest = deces.orderBy(desc("age_moyen_deces")).limit(10)
     print("Top 10 communes avec le plus haut age moyen de décès :")
     top_10_highest.show(truncate=False)
 
     # Top 10 communes avec la plus faible espérance de vie
-    top_10_lowest = age_moyen_deces_filtre.orderBy(asc("age_moyen_deces")).limit(10)
+    top_10_lowest = deces.orderBy(asc("age_moyen_deces")).limit(10)
     print("Top 10 communes avec le plus faible age moyen de décès :")
     top_10_lowest.show(truncate=False)
 
-    #Maintenant on fait par département, même chose que précédemment mais la ligne suivant permet d'agréger en fonction de la substring des 2 premiers caractères du code département
-    donnee = donnee.withColumn("code_departement", substring(col("code_lieu_deces"), 1, 2))
+    return
 
-    #On supprimer les données les colones avec un code de département qu'on vient d'obtenir manquant
-    donnee = donnee.filter(col("code_departement").isNotNull() & (col("code_departement") != ""))
-    age_moyen_deces_departement = donnee.groupBy("code_departement") \
-        .agg(avg("age_deces").alias("age_moyen_deces"), count("*").alias("nombre_individus"))
-
-    age_moyen_deces_departement_filtre = age_moyen_deces_departement.filter(col("nombre_individus") > 10000)
-
-    top_10_highest_dep = age_moyen_deces_departement_filtre.orderBy(desc("age_moyen_deces")).limit(10)
+def fun_facts_departement(deces: DataFrame):
+    # Top 10 departement avec la plus haute espérance de vie
+    top_10_highest_dep = deces.orderBy(desc("age_moyen_deces")).limit(10)
     print("Top 10 DÉPARTEMENTS avec le plus haut age moyen de décès :")
     top_10_highest_dep.show(truncate=False)
 
-    top_10_lowest_dep = age_moyen_deces_departement_filtre.orderBy(asc("age_moyen_deces")).limit(10)
+    # Top 10 departement avec la plus faible espérance de vie
+    top_10_lowest_dep = deces.orderBy(asc("age_moyen_deces")).limit(10)
     print("Top 10 DÉPARTEMENTS avec le plus faible age moyen de décès :")
     top_10_lowest_dep.show(truncate=False)
 
-    carte1= carte(age_moyen_deces_departement_filtre,"age_moyen_deces")
-    carte1.dessine()
-    carte1.afficher()
+    return
+
+if __name__ == "__main__":
+    spark = common.get_spark()
+    repartition = spark.read.parquet("data/ages")
+    raw_deces = spark.read.parquet("data/deces")
+    info_deces(raw_deces)
+    deces_commune=compute_age_moyen_deces_commune(raw_deces)
+    deces_departement=compute_age_moyen_deces_departement(raw_deces)
+    fun_facts_commune(deces_commune)
+    fun_facts_departement(deces_departement)
+
+    carte_esperance=carte(compute_life_expectancy(raw_deces, repartition),"esperance")
+    carte_esperance.dessine()
+
+    carte_deces=carte(deces_departement,"age_moyen_deces")
+    carte_deces.dessine()
+
+    carte_deces.afficher()
+    carte_esperance.afficher()

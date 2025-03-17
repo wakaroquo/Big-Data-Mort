@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "BIG-DATA-MORT"
 version = "0.1.0"
 description = "UE Big Data - BIG-DATA-MORT project"
-dependencies = ["pyspark", "altair", "requests", "pandas", "geopandas", "matplotlib", "setuptools", "xlrd"]
+dependencies = ["pyspark", "altair", "requests", "pandas", "geopandas", "matplotlib", "setuptools", "xlrd", "pyarrow"]
 
 [tool.setuptools]
 py-modules = ["lab3"]

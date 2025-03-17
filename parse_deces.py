@@ -51,8 +51,8 @@ def parse_fixed_width(df: DataFrame) -> DataFrame:
 
 #fonction main proche du tp3
 if __name__ == "__main__":
-    spark = get_spark()
-    DATA_FOLDER = "download"
+    spark = common.get_spark()
+    DATA_FOLDER = "download/deces"
     
     df = spark.read.text(os.path.join(DATA_FOLDER, "*.txt"))
     parsed_df = parse_fixed_width(df)

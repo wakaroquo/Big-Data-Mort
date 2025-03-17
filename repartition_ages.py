@@ -8,7 +8,7 @@ import common
 import re
 
 
-def parse_tranche(tranche: str) -> (int, int):
+def parse_tranche(tranche: str) -> (int, int | None):
     """Parse the header of a column
 
     Args:
@@ -18,20 +18,20 @@ def parse_tranche(tranche: str) -> (int, int):
         ValueError: if the input string does not follow format
 
     Returns:
-        (int, int): range of age described, to 200 if the age is not bounded
+        (int, int | None): range of age described, to 200 if the age is not bounded
     """
     res = re.findall(r"(\d+) à (\d+) ans", tranche)
     if len(res) == 1:
-        return res[0]
+        return int(res[0][0]), int(res[0][1])
     
     res = re.findall(r"(\d+) ans et plus", tranche)
     if len(res) == 1:
-        return res[0], 200 # AHHHHHHHHH Don't do that!
+        return int(res[0]), None
     
     raise ValueError
 
 
-def parse_excel_file(excel_file: str) -> list[(int, int, int, int, int)]:
+def parse_excel_file(excel_file: str) -> list[(int, str, int, int, int)]:
     """parse the excel file or fail trying
 
     Args:
@@ -86,7 +86,7 @@ def parse_excel_file(excel_file: str) -> list[(int, int, int, int, int)]:
                     val = 0
 
 
-                data.append((int(sheet_name), int(code_dept), int(age_de), int(age_jusqua), val))
+                data.append((int(sheet_name), code_dept, age_de, age_jusqua, val))
     return data
 
 def load_data_parquet(excel_file: str, parquet_file: str) -> pyspark.sql.DataFrame:
@@ -110,10 +110,10 @@ def load_data_parquet(excel_file: str, parquet_file: str) -> pyspark.sql.DataFra
 
     schema = StructType([
         StructField('annee', IntegerType(), True),
-        StructField('departement', IntegerType(), True),  # What about Corsica?
+        StructField('departement', StringType(), True),
         StructField('age_de', IntegerType(), True),
         StructField('age_jusqua', IntegerType(), True),
-        StructField('populaiton', IntegerType(), True)
+        StructField('population', IntegerType(), True)
     ])
 
     df = spark.createDataFrame(parse_excel_file(excel_file), schema=schema)

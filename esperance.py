@@ -123,8 +123,8 @@ def prod_sum(age_pis: list(Row)) -> int:
     return res
 
 
-def compute_age_repartition(deces: DataFrame, population: DataFrame) -> DataFrame:
-    """_summary_
+def compute_life_expectancy(deces: DataFrame, population: DataFrame) -> DataFrame:
+    """Compute life expectancy from data
 
     Args:
         deces (DataFrame): Dataframe contenant le fichier des décès
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     repartition = spark.read.parquet("data/ages")
     deces = spark.read.parquet("data/deces")
 
-    compute_age_repartition(deces, repartition)
+    compute_life_expectancy(deces, repartition)
 
 
     # What a bad name

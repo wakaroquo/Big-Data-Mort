@@ -1,7 +1,8 @@
 import os
 import requests
 BASE_API_URL = "https://www.data.gouv.fr/api/2/datasets/5de8f397634f4164071119c5/resources/"
-DOWNLOAD_FOLDER = "download/deces"
+DOWNLOAD = "download"
+DOWNLOAD_FOLDER = DOWNLOAD+"/deces"
 
 def fetch_resources(page):
     params = {
@@ -46,3 +47,6 @@ def download():
 
 if __name__ == "__main__":
     download()
+    age=requests.get("https://www.insee.fr/fr/statistiques/fichier/1893198/estim-pop-dep-sexe-aq-1975-2023.xls")
+    with open(DOWNLOAD+"ages.xls", 'wb') as file:
+        file.write(age.content)

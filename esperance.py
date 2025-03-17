@@ -1,8 +1,6 @@
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
-import geopandas as gpd
-import matplotlib.pyplot as plt
 import common
 
 
@@ -76,11 +74,11 @@ def extrapolate_age_partitionning(population: DataFrame) -> DataFrame:
         ])
     )
 
-def pi_list(age_pis: list(Row)) -> list[float]:
+def pi_list(age_pis: list[Row]) -> list[float]:
     """Fonction auxiliaire qui transforme des lignes en un tableau complet
 
     Args:
-        age_pis (list): liste de lignes de la forme age, pi, avec pi la probabilité de rester en vie à l'age
+        age_pis (list[Row]): liste de lignes de la forme age, pi, avec pi la probabilité de rester en vie à l'age
 
     Returns:
         list[float]: liste qui dans la cellule i contient la probabilité de survivre à l'année i+1
@@ -101,14 +99,14 @@ def pi_list(age_pis: list(Row)) -> list[float]:
 
 
 @udf(returnType=FloatType())
-def prod_sum(age_pis: list(Row)) -> int:
+def life_expecancy(age_pis: list[Row]) -> float:
     """Mapper qui transforme une liste de probabilité de survie à chaque âge en espérance de vie
 
     Args:
-        age_pis (_type_): liste de lignes de la forme age, pi, avec pi la probabilité de rester en vie à l'age
+        age_pis (list[Row]): liste de lignes de la forme age, pi, avec pi la probabilité de rester en vie à l'age
 
     Returns:
-        _type_: _description_
+        int: Espérance de vie
     """
     # On range les pi dans un tableau
     pis = pi_list(age_pis)
@@ -158,7 +156,7 @@ def compute_life_expectancy(deces: DataFrame, population: DataFrame) -> DataFram
         .agg( # On fusionne et on garde la colone age et pi
             collect_list("age_pi").alias("list_age_pi"))\
         .withColumn( # On calcule l'espérance de vie
-            "esperance", prod_sum(col("list_age_pi")))\
+            "esperance", life_expecancy(col("list_age_pi")))\
         .drop( # On supprime cette colones car inutile et longue, c'est un tableau
             "list_age_pi")
 

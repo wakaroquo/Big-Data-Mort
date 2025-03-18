@@ -6,7 +6,6 @@ import common
 if __name__ == "__main__":
     spark = common.get_spark()
 
-    # If a path is passed as arguement, read that file, otherwise read 
     if len(sys.argv) == 2:
         file = sys.argv[1]
     else:

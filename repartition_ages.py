@@ -6,6 +6,7 @@ import pyspark
 from pyspark.sql.types import StructType,StructField, StringType, IntegerType
 import common
 import re
+import sys
 
 
 def parse_tranche(tranche: str) -> (int, int | None):

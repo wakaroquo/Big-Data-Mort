@@ -1,15 +1,7 @@
 # Big-Data-Mort
 
-## Installation
-
-```bash
-python3 -m venv .venv --copies
-source .venv/bin/activate
-pip install -e .
-```
-
 ## Lancement
-Pour lancer le deroulement complet des scripts, il faut simplement lancer runAll.sh, qui s'occupe de lancer les scripts dans le bon ordre. La description des différents scripts est décrite ci-dessous.
+Pour lancer le deroulement complet des scripts y compris l'installation, il faut simplement lancer `runAll.sh`, qui s'occupe de lancer les scripts dans le bon ordre. La description des différents scripts est décrite ci-dessous.
 
 ## Configuration générale
 

@@ -37,7 +37,7 @@ Ce script est le script de traitement principal, qui permet à partir des fichie
 
 ### `carte.py`
 
-Ce script permet, à partir de données traitées spark (ayant une colonne code_departement et un attribut a étudier), d'afficher une carte de la france représentant l'attribut selectionné selon la position géographique. Toute carte dessinée est sauvegardée au format png dans le dossier courrant.
+Ce fichier est une bibliothèque qui permet, à partir de données traitées spark (ayant une colonne code_departement et un attribut a étudier), d'afficher une carte de la france représentant l'attribut selectionné selon la position géographique. Toute carte dessinée est sauvegardée au format png dans le dossier courrant.
 
 ### `test_parquet.py`
 

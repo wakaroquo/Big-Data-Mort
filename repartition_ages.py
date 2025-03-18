@@ -9,7 +9,7 @@ import re
 import sys
 
 
-def parse_tranche(tranche: str) -> (int, int | None):
+def parse_tranche(tranche: str) -> tuple[int, int | None]:
     """Parse the header of a column
 
     Args:
